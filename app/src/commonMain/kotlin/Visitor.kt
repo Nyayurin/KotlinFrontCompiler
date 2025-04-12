@@ -1,57 +1,66 @@
 import com.strumenta.antlrkotlin.parsers.generated.KotlinLexer
 import com.strumenta.antlrkotlin.parsers.generated.KotlinParser
 import org.antlr.v4.kotlinruntime.tree.TerminalNode
-import tree.grammar.*
-import tree.syntax.KotlinScript
+import tree.ast.*
 
-fun KotlinParser.KotlinFileContext.visit(name: String): tree.syntax.KotlinFile {
-	return tree.syntax.KotlinFile(
-		fileName = name,
-		fileAnnotations = fileAnnotation().map { it.unescapedAnnotation() }.flatten().map { it.visit() },
-		`package` = packageHeader().identifier()?.text,
-		imports = importList().importHeader().map { it.visit() },
-		topLevelObjects = topLevelObject().map { it.visit() }
+fun KotlinParser.KotlinFileContext.visit(): ASTKotlinFile {
+	return ASTKotlinFile(
+		fileAnnotation = fileAnnotation().map { it.visit() },
+		packageHeader =packageHeader().visit(),
+		importList = importList().visit(),
+		topLevelObject = topLevelObject().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ScriptContext.visit(name: String): KotlinScript {
-	return KotlinScript(
-		fileName = name,
-		fileAnnotations = fileAnnotation().map { it.unescapedAnnotation() }.flatten().map { it.visit() },
-		`package` = packageHeader().identifier()?.text,
-		imports = importList().importHeader().map { it.visit() },
-		statements = statement().map { it.visit() }
+fun KotlinParser.ScriptContext.visit(): ASTScript {
+	return ASTScript(
+		fileAnnotation = fileAnnotation().map { it.visit() },
+		packageHeader =packageHeader().visit(),
+		importList = importList().visit(),
+		statement = statement().map { it.visit() }
 	)
 }
 
-fun KotlinParser.FileAnnotationContext.visit(): FileAnnotation {
-	return FileAnnotation(
+fun KotlinParser.FileAnnotationContext.visit(): ASTFileAnnotation {
+	return ASTFileAnnotation(
 		unescapedAnnotation = unescapedAnnotation().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ImportHeaderContext.visit(): ImportHeader {
-	return ImportHeader(
+fun KotlinParser.PackageHeaderContext.visit(): ASTPackageHeader {
+	return ASTPackageHeader(
+		identifier = identifier()?.visit()
+	)
+}
+
+fun KotlinParser.ImportListContext.visit(): ASTImportList {
+	return ASTImportList(
+		importHeader = importHeader().map { it.visit() }
+	)
+}
+
+fun KotlinParser.ImportHeaderContext.visit(): ASTImportHeader {
+	return ASTImportHeader(
 		identifier = identifier().visit(),
 		multi = MULT() != null,
 		importAlias = importAlias()?.visit()
 	)
 }
 
-fun KotlinParser.ImportAliasContext.visit(): ImportAlias {
-	return ImportAlias(
+fun KotlinParser.ImportAliasContext.visit(): ASTImportAlias {
+	return ASTImportAlias(
 		simpleIdentifier = simpleIdentifier().visit()
 	)
 }
 
-fun KotlinParser.TopLevelObjectContext.visit(): TopLevelObject {
-	return TopLevelObject(
+fun KotlinParser.TopLevelObjectContext.visit(): ASTTopLevelObject {
+	return ASTTopLevelObject(
 		declaration = declaration().visit()
 	)
 }
 
-fun KotlinParser.TypeAliasContext.visit(): TypeAlias {
-	return TypeAlias(
+fun KotlinParser.TypeAliasContext.visit(): ASTTypeAlias {
+	return ASTTypeAlias(
 		modifiers = modifiers()?.visit(),
 		simpleIdentifier = simpleIdentifier().visit(),
 		typeParameters = typeParameters()?.visit(),
@@ -59,8 +68,8 @@ fun KotlinParser.TypeAliasContext.visit(): TypeAlias {
 	)
 }
 
-fun KotlinParser.DeclarationContext.visit(): Declaration {
-	return Declaration(
+fun KotlinParser.DeclarationContext.visit(): ASTDeclaration {
+	return ASTDeclaration(
 		classDeclaration = classDeclaration()?.visit(),
 		objectDeclaration = objectDeclaration()?.visit(),
 		functionDeclaration = functionDeclaration()?.visit(),
@@ -69,8 +78,8 @@ fun KotlinParser.DeclarationContext.visit(): Declaration {
 	)
 }
 
-fun KotlinParser.ClassDeclarationContext.visit(): ClassDeclaration {
-	return ClassDeclaration(
+fun KotlinParser.ClassDeclarationContext.visit(): ASTClassDeclaration {
+	return ASTClassDeclaration(
 		modifiers = modifiers()?.visit(),
 		`class` = CLASS() != null,
 		`fun` = FUN() != null,
@@ -85,27 +94,27 @@ fun KotlinParser.ClassDeclarationContext.visit(): ClassDeclaration {
 	)
 }
 
-fun KotlinParser.PrimaryConstructorContext.visit(): PrimaryConstructor {
-	return PrimaryConstructor(
+fun KotlinParser.PrimaryConstructorContext.visit(): ASTPrimaryConstructor {
+	return ASTPrimaryConstructor(
 		modifiers = modifiers()?.visit(),
 		classParameters = classParameters().visit()
 	)
 }
 
-fun KotlinParser.ClassBodyContext.visit(): ClassBody {
-	return ClassBody(
+fun KotlinParser.ClassBodyContext.visit(): ASTClassBody {
+	return ASTClassBody(
 		classMemberDeclarations = classMemberDeclarations().visit()
 	)
 }
 
-fun KotlinParser.ClassParametersContext.visit(): ClassParameters {
-	return ClassParameters(
+fun KotlinParser.ClassParametersContext.visit(): ASTClassParameters {
+	return ASTClassParameters(
 		classParameter = classParameter().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ClassParameterContext.visit(): ClassParameter {
-	return ClassParameter(
+fun KotlinParser.ClassParameterContext.visit(): ASTClassParameter {
+	return ASTClassParameter(
 		modifiers = modifiers()?.visit(),
 		mutable = VAR() != null,
 		simpleIdentifier = simpleIdentifier().visit(),
@@ -114,14 +123,14 @@ fun KotlinParser.ClassParameterContext.visit(): ClassParameter {
 	)
 }
 
-fun KotlinParser.DelegationSpecifiersContext.visit(): DelegationSpecifiers {
-	return DelegationSpecifiers(
+fun KotlinParser.DelegationSpecifiersContext.visit(): ASTDelegationSpecifiers {
+	return ASTDelegationSpecifiers(
 		annotatedDelegationSpecifier = annotatedDelegationSpecifier().map { it.visit() }
 	)
 }
 
-fun KotlinParser.DelegationSpecifierContext.visit(): DelegationSpecifier {
-	return DelegationSpecifier(
+fun KotlinParser.DelegationSpecifierContext.visit(): ASTDelegationSpecifier {
+	return ASTDelegationSpecifier(
 		constructorInvocation = constructorInvocation()?.visit(),
 		explicitDelegation = explicitDelegation()?.visit(),
 		userType = userType()?.visit(),
@@ -130,64 +139,64 @@ fun KotlinParser.DelegationSpecifierContext.visit(): DelegationSpecifier {
 	)
 }
 
-fun KotlinParser.ConstructorInvocationContext.visit(): ConstructorInvocation {
-	return ConstructorInvocation(
+fun KotlinParser.ConstructorInvocationContext.visit(): ASTConstructorInvocation {
+	return ASTConstructorInvocation(
 		userType = userType().visit(),
 		valueArguments = valueArguments().visit()
 	)
 }
 
-fun KotlinParser.AnnotatedDelegationSpecifierContext.visit(): AnnotatedDelegationSpecifier {
-	return AnnotatedDelegationSpecifier(
+fun KotlinParser.AnnotatedDelegationSpecifierContext.visit(): ASTAnnotatedDelegationSpecifier {
+	return ASTAnnotatedDelegationSpecifier(
 		annotation = annotation().map { it.visit() },
 		delegationSpecifier = delegationSpecifier().visit()
 	)
 }
 
-fun KotlinParser.ExplicitDelegationContext.visit(): ExplicitDelegation {
-	return ExplicitDelegation(
+fun KotlinParser.ExplicitDelegationContext.visit(): ASTExplicitDelegation {
+	return ASTExplicitDelegation(
 		userType = userType()?.visit(),
 		functionType = functionType()?.visit(),
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.TypeParametersContext.visit(): TypeParameters {
-	return TypeParameters(
+fun KotlinParser.TypeParametersContext.visit(): ASTTypeParameters {
+	return ASTTypeParameters(
 		typeParameter = typeParameter().map { it.visit() }
 	)
 }
 
-fun KotlinParser.TypeParameterContext.visit(): TypeParameter {
-	return TypeParameter(
+fun KotlinParser.TypeParameterContext.visit(): ASTTypeParameter {
+	return ASTTypeParameter(
 		typeParameterModifiers = typeParameterModifiers()?.visit(),
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type()?.visit()
 	)
 }
 
-fun KotlinParser.TypeConstraintsContext.visit(): TypeConstraints {
-	return TypeConstraints(
+fun KotlinParser.TypeConstraintsContext.visit(): ASTTypeConstraints {
+	return ASTTypeConstraints(
 		typeConstraint = typeConstraint().map { it.visit() }
 	)
 }
 
-fun KotlinParser.TypeConstraintContext.visit(): TypeConstraint {
-	return TypeConstraint(
+fun KotlinParser.TypeConstraintContext.visit(): ASTTypeConstraint {
+	return ASTTypeConstraint(
 		annotation = annotation().map { it.visit() },
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type().visit()
 	)
 }
 
-fun KotlinParser.ClassMemberDeclarationsContext.visit(): ClassMemberDeclarations {
-	return ClassMemberDeclarations(
+fun KotlinParser.ClassMemberDeclarationsContext.visit(): ASTClassMemberDeclarations {
+	return ASTClassMemberDeclarations(
 		classMemberDeclaration = classMemberDeclaration().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ClassMemberDeclarationContext.visit(): ClassMemberDeclaration {
-	return ClassMemberDeclaration(
+fun KotlinParser.ClassMemberDeclarationContext.visit(): ASTClassMemberDeclaration {
+	return ASTClassMemberDeclaration(
 		declaration = declaration()?.visit(),
 		companionObject = companionObject()?.visit(),
 		anonymousInitializer = anonymousInitializer()?.visit(),
@@ -195,14 +204,14 @@ fun KotlinParser.ClassMemberDeclarationContext.visit(): ClassMemberDeclaration {
 	)
 }
 
-fun KotlinParser.AnonymousInitializerContext.visit(): AnonymousInitializer {
-	return AnonymousInitializer(
+fun KotlinParser.AnonymousInitializerContext.visit(): ASTAnonymousInitializer {
+	return ASTAnonymousInitializer(
 		block = block().visit()
 	)
 }
 
-fun KotlinParser.CompanionObjectContext.visit(): CompanionObject {
-	return CompanionObject(
+fun KotlinParser.CompanionObjectContext.visit(): ASTCompanionObject {
+	return ASTCompanionObject(
 		modifiers = modifiers()?.visit(),
 		data = DATA() != null,
 		simpleIdentifier = simpleIdentifier()?.visit(),
@@ -211,22 +220,22 @@ fun KotlinParser.CompanionObjectContext.visit(): CompanionObject {
 	)
 }
 
-fun KotlinParser.FunctionValueParametersContext.visit(): FunctionValueParameters {
-	return FunctionValueParameters(
+fun KotlinParser.FunctionValueParametersContext.visit(): ASTFunctionValueParameters {
+	return ASTFunctionValueParameters(
 		functionValueParameter = functionValueParameter().map { it.visit() }
 	)
 }
 
-fun KotlinParser.FunctionValueParameterContext.visit(): FunctionValueParameter {
-	return FunctionValueParameter(
+fun KotlinParser.FunctionValueParameterContext.visit(): ASTFunctionValueParameter {
+	return ASTFunctionValueParameter(
 		parameterModifiers = parameterModifiers()?.visit(),
 		parameter = parameter().visit(),
 		expression = expression()?.visit()
 	)
 }
 
-fun KotlinParser.FunctionDeclarationContext.visit(): FunctionDeclaration {
-	return FunctionDeclaration(
+fun KotlinParser.FunctionDeclarationContext.visit(): ASTFunctionDeclaration {
+	return ASTFunctionDeclaration(
 		modifiers = modifiers()?.visit(),
 		typeParameters = typeParameters()?.visit(),
 		receiverType = receiverType()?.visit(),
@@ -238,29 +247,29 @@ fun KotlinParser.FunctionDeclarationContext.visit(): FunctionDeclaration {
 	)
 }
 
-fun KotlinParser.FunctionBodyContext.visit(): FunctionBody {
-	return FunctionBody(
+fun KotlinParser.FunctionBodyContext.visit(): ASTFunctionBody {
+	return ASTFunctionBody(
 		block = block()?.visit(),
 		expression = expression()?.visit()
 	)
 }
 
-fun KotlinParser.VariableDeclarationContext.visit(): VariableDeclaration {
-	return VariableDeclaration(
+fun KotlinParser.VariableDeclarationContext.visit(): ASTVariableDeclaration {
+	return ASTVariableDeclaration(
 		annotation = annotation().map { it.visit() },
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type()?.visit()
 	)
 }
 
-fun KotlinParser.MultiVariableDeclarationContext.visit(): MultiVariableDeclaration {
-	return MultiVariableDeclaration(
+fun KotlinParser.MultiVariableDeclarationContext.visit(): ASTMultiVariableDeclaration {
+	return ASTMultiVariableDeclaration(
 		variableDeclaration = variableDeclaration().map { it.visit() }
 	)
 }
 
-fun KotlinParser.PropertyDeclarationContext.visit(): PropertyDeclaration {
-	return PropertyDeclaration(
+fun KotlinParser.PropertyDeclarationContext.visit(): ASTPropertyDeclaration {
+	return ASTPropertyDeclaration(
 		modifiers = modifiers()?.visit(),
 		mutable = VAR() != null,
 		typeParameters = typeParameters()?.visit(),
@@ -275,22 +284,22 @@ fun KotlinParser.PropertyDeclarationContext.visit(): PropertyDeclaration {
 	)
 }
 
-fun KotlinParser.PropertyDelegateContext.visit(): PropertyDelegate {
-	return PropertyDelegate(
+fun KotlinParser.PropertyDelegateContext.visit(): ASTPropertyDelegate {
+	return ASTPropertyDelegate(
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.GetterContext.visit(): Getter {
-	return Getter(
+fun KotlinParser.GetterContext.visit(): ASTGetter {
+	return ASTGetter(
 		modifiers = modifiers()?.visit(),
 		type = type()?.visit(),
 		functionBody = functionBody()?.visit()
 	)
 }
 
-fun KotlinParser.SetterContext.visit(): Setter {
-	return Setter(
+fun KotlinParser.SetterContext.visit(): ASTSetter {
+	return ASTSetter(
 		modifiers = modifiers()?.visit(),
 		functionValueParameterWithOptionalType = functionValueParameterWithOptionalType()?.visit(),
 		type = type()?.visit(),
@@ -298,36 +307,36 @@ fun KotlinParser.SetterContext.visit(): Setter {
 	)
 }
 
-fun KotlinParser.ParametersWithOptionalTypeContext.visit(): ParametersWithOptionalType {
-	return ParametersWithOptionalType(
+fun KotlinParser.ParametersWithOptionalTypeContext.visit(): ASTParametersWithOptionalType {
+	return ASTParametersWithOptionalType(
 		functionValueParameterWithOptionalType = functionValueParameterWithOptionalType().map { it.visit() }
 	)
 }
 
-fun KotlinParser.FunctionValueParameterWithOptionalTypeContext.visit(): FunctionValueParameterWithOptionalType {
-	return FunctionValueParameterWithOptionalType(
+fun KotlinParser.FunctionValueParameterWithOptionalTypeContext.visit(): ASTFunctionValueParameterWithOptionalType {
+	return ASTFunctionValueParameterWithOptionalType(
 		parameterModifiers = parameterModifiers()?.visit(),
 		parameterWithOptionalType = parameterWithOptionalType().visit(),
 		expression = expression()?.visit()
 	)
 }
 
-fun KotlinParser.ParameterWithOptionalTypeContext.visit(): ParameterWithOptionalType {
-	return ParameterWithOptionalType(
+fun KotlinParser.ParameterWithOptionalTypeContext.visit(): ASTParameterWithOptionalType {
+	return ASTParameterWithOptionalType(
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type()?.visit()
 	)
 }
 
-fun KotlinParser.ParameterContext.visit(): Parameter {
-	return Parameter(
+fun KotlinParser.ParameterContext.visit(): ASTParameter {
+	return ASTParameter(
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type().visit()
 	)
 }
 
-fun KotlinParser.ObjectDeclarationContext.visit(): ObjectDeclaration {
-	return ObjectDeclaration(
+fun KotlinParser.ObjectDeclarationContext.visit(): ASTObjectDeclaration {
+	return ASTObjectDeclaration(
 		modifiers = modifiers()?.visit(),
 		simpleIdentifier = simpleIdentifier().visit(),
 		delegationSpecifiers = delegationSpecifiers()?.visit(),
@@ -335,8 +344,8 @@ fun KotlinParser.ObjectDeclarationContext.visit(): ObjectDeclaration {
 	)
 }
 
-fun KotlinParser.SecondaryConstructorContext.visit(): SecondaryConstructor {
-	return SecondaryConstructor(
+fun KotlinParser.SecondaryConstructorContext.visit(): ASTSecondaryConstructor {
+	return ASTSecondaryConstructor(
 		modifiers = modifiers()?.visit(),
 		functionValueParameters = functionValueParameters().visit(),
 		constructorDelegationCall = constructorDelegationCall()?.visit(),
@@ -344,28 +353,28 @@ fun KotlinParser.SecondaryConstructorContext.visit(): SecondaryConstructor {
 	)
 }
 
-fun KotlinParser.ConstructorDelegationCallContext.visit(): ConstructorDelegationCall {
-	return ConstructorDelegationCall(
+fun KotlinParser.ConstructorDelegationCallContext.visit(): ASTConstructorDelegationCall {
+	return ASTConstructorDelegationCall(
 		`super` = SUPER() != null,
 		valueArguments = valueArguments().visit()
 	)
 }
 
-fun KotlinParser.EnumClassBodyContext.visit(): EnumClassBody {
-	return EnumClassBody(
+fun KotlinParser.EnumClassBodyContext.visit(): ASTEnumClassBody {
+	return ASTEnumClassBody(
 		enumEntries = enumEntries()?.visit(),
 		classMemberDeclarations = classMemberDeclarations()?.visit()
 	)
 }
 
-fun KotlinParser.EnumEntriesContext.visit(): EnumEntries {
-	return EnumEntries(
+fun KotlinParser.EnumEntriesContext.visit(): ASTEnumEntries {
+	return ASTEnumEntries(
 		enumEntry = enumEntry().map { it.visit() }
 	)
 }
 
-fun KotlinParser.EnumEntryContext.visit(): EnumEntry {
-	return EnumEntry(
+fun KotlinParser.EnumEntryContext.visit(): ASTEnumEntry {
+	return ASTEnumEntry(
 		modifiers = modifiers()?.visit(),
 		simpleIdentifier = simpleIdentifier().visit(),
 		valueArguments = valueArguments()?.visit(),
@@ -373,8 +382,8 @@ fun KotlinParser.EnumEntryContext.visit(): EnumEntry {
 	)
 }
 
-fun KotlinParser.TypeContext.visit(): Type {
-	return Type(
+fun KotlinParser.TypeContext.visit(): ASTType {
+	return ASTType(
 		typeModifiers = typeModifiers()?.visit(),
 		functionType = functionType()?.visit(),
 		parenthesizedType = parenthesizedType()?.visit(),
@@ -384,77 +393,77 @@ fun KotlinParser.TypeContext.visit(): Type {
 	)
 }
 
-fun KotlinParser.TypeReferenceContext.visit(): TypeReference {
-	return TypeReference(
+fun KotlinParser.TypeReferenceContext.visit(): ASTTypeReference {
+	return ASTTypeReference(
 		userType = userType()?.visit(),
 		dynamic = DYNAMIC() != null
 	)
 }
 
-fun KotlinParser.NullableTypeContext.visit(): NullableType {
-	return NullableType(
+fun KotlinParser.NullableTypeContext.visit(): ASTNullableType {
+	return ASTNullableType(
 		typeReference = typeReference()?.visit(),
 		parenthesizedType = parenthesizedType()?.visit()
 	)
 }
 
-fun KotlinParser.UserTypeContext.visit(): UserType {
-	return UserType(
+fun KotlinParser.UserTypeContext.visit(): ASTUserType {
+	return ASTUserType(
 		simpleUserType = simpleUserType().map { it.visit() }
 	)
 }
 
-fun KotlinParser.SimpleUserTypeContext.visit(): SimpleUserType {
-	return SimpleUserType(
+fun KotlinParser.SimpleUserTypeContext.visit(): ASTSimpleUserType {
+	return ASTSimpleUserType(
 		simpleIdentifier = simpleIdentifier().visit(),
 		typeArguments = typeArguments()?.visit()
 	)
 }
 
-fun KotlinParser.TypeProjectionContext.visit(): TypeProjection {
-	return TypeProjection(
+fun KotlinParser.TypeProjectionContext.visit(): ASTTypeProjection {
+	return ASTTypeProjection(
 		typeProjectionModifiers = typeProjectionModifiers()?.visit(),
 		type = type()?.visit(),
 		multi = MULT() != null
 	)
 }
 
-fun KotlinParser.TypeProjectionModifiersContext.visit(): TypeProjectionModifiers {
-	return TypeProjectionModifiers(
+fun KotlinParser.TypeProjectionModifiersContext.visit(): ASTTypeProjectionModifiers {
+	return ASTTypeProjectionModifiers(
 		typeProjectionModifier = typeProjectionModifier().map { it.visit() }
 	)
 }
 
-fun KotlinParser.TypeProjectionModifierContext.visit(): TypeProjectionModifier {
-	return TypeProjectionModifier(
+fun KotlinParser.TypeProjectionModifierContext.visit(): ASTTypeProjectionModifier {
+	return ASTTypeProjectionModifier(
 		varianceModifier = varianceModifier()?.visit(),
 		annotation = annotation()?.visit()
 	)
 }
 
-fun KotlinParser.FunctionTypeContext.visit(): FunctionType {
-	return FunctionType(
+fun KotlinParser.FunctionTypeContext.visit(): ASTFunctionType {
+	return ASTFunctionType(
 		receiverType = receiverType()?.visit(),
 		functionTypeParameters = functionTypeParameters().visit(),
 		type = type().visit()
 	)
 }
 
-fun KotlinParser.FunctionTypeParametersContext.visit(): FunctionTypeParameters {
-	return FunctionTypeParameters(
+fun KotlinParser.FunctionTypeParametersContext.visit(): ASTFunctionTypeParameters {
+	return ASTFunctionTypeParameters(
 		parameter = parameter().map { it.visit() },
 		type = type().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ParenthesizedTypeContext.visit(): ParenthesizedType {
-	return ParenthesizedType(
+fun KotlinParser.ParenthesizedTypeContext.visit(): ASTParenthesizedType {
+	return ASTParenthesizedType(
 		type = type().visit()
 	)
 }
 
-fun KotlinParser.ReceiverTypeContext.visit(): ReceiverType {
-	return ReceiverType(
+fun KotlinParser.ReceiverTypeContext.visit(): ASTReceiverType {
+	return ASTReceiverType(
 		typeModifiers = typeModifiers()?.visit(),
 		parenthesizedType = parenthesizedType()?.visit(),
 		nullableType = nullableType()?.visit(),
@@ -462,14 +471,14 @@ fun KotlinParser.ReceiverTypeContext.visit(): ReceiverType {
 	)
 }
 
-fun KotlinParser.ParenthesizedUserTypeContext.visit(): ParenthesizedUserType {
-	return ParenthesizedUserType(
+fun KotlinParser.ParenthesizedUserTypeContext.visit(): ASTParenthesizedUserType {
+	return ASTParenthesizedUserType(
 		userType = userType()?.visit(),
 		parenthesizedUserType = parenthesizedUserType()?.visit()
 	)
 }
 
-fun KotlinParser.DefinitelyNonNullableTypeContext.visit(): DefinitelyNonNullableType {
+fun KotlinParser.DefinitelyNonNullableTypeContext.visit(): ASTDefinitelyNonNullableType {
 	val child = children!!.filter { !(it is TerminalNode && it.symbol.type == KotlinLexer.Tokens.NL) }
 	val typeModifiersLeft = child[0].let {
 		when (it) {
@@ -514,7 +523,7 @@ fun KotlinParser.DefinitelyNonNullableTypeContext.visit(): DefinitelyNonNullable
 		else -> null
 	}
 
-	return DefinitelyNonNullableType(
+	return ASTDefinitelyNonNullableType(
 		typeModifiersLeft = typeModifiersLeft,
 		userTypeLeft = userTypeLeft,
 		parenthesizedUserTypeLeft = parenthesizedUserTypeLeft,
@@ -524,14 +533,14 @@ fun KotlinParser.DefinitelyNonNullableTypeContext.visit(): DefinitelyNonNullable
 	)
 }
 
-fun KotlinParser.StatementsContext.visit(): Statements {
-	return Statements(
+fun KotlinParser.StatementsContext.visit(): ASTStatements {
+	return ASTStatements(
 		statement = statement().map { it.visit() }
 	)
 }
 
-fun KotlinParser.StatementContext.visit(): Statement {
-	return Statement(
+fun KotlinParser.StatementContext.visit(): ASTStatement {
+	return ASTStatement(
 		label = label().map { it.visit() },
 		annotation = annotation().map { it.visit() },
 		declaration = declaration()?.visit(),
@@ -541,35 +550,35 @@ fun KotlinParser.StatementContext.visit(): Statement {
 	)
 }
 
-fun KotlinParser.LabelContext.visit(): Label {
-	return Label(
+fun KotlinParser.LabelContext.visit(): ASTLabel {
+	return ASTLabel(
 		simpleIdentifier = simpleIdentifier().visit()
 	)
 }
 
-fun KotlinParser.ControlStructureBodyContext.visit(): ControlStructureBody {
-	return ControlStructureBody(
+fun KotlinParser.ControlStructureBodyContext.visit(): ASTControlStructureBody {
+	return ASTControlStructureBody(
 		block = block()?.visit(),
 		statement = statement()?.visit()
 	)
 }
 
-fun KotlinParser.BlockContext.visit(): Block {
-	return Block(
+fun KotlinParser.BlockContext.visit(): ASTBlock {
+	return ASTBlock(
 		statements = statements().visit()
 	)
 }
 
-fun KotlinParser.LoopStatementContext.visit(): LoopStatement {
-	return LoopStatement(
+fun KotlinParser.LoopStatementContext.visit(): ASTLoopStatement {
+	return ASTLoopStatement(
 		forStatement = forStatement()?.visit(),
 		whileStatement = whileStatement()?.visit(),
 		doWhileStatement = doWhileStatement()?.visit()
 	)
 }
 
-fun KotlinParser.ForStatementContext.visit(): ForStatement {
-	return ForStatement(
+fun KotlinParser.ForStatementContext.visit(): ASTForStatement {
+	return ASTForStatement(
 		annotation = annotation().map { it.visit() },
 		variableDeclaration = variableDeclaration()?.visit(),
 		multiVariableDeclaration = multiVariableDeclaration()?.visit(),
@@ -578,22 +587,22 @@ fun KotlinParser.ForStatementContext.visit(): ForStatement {
 	)
 }
 
-fun KotlinParser.WhileStatementContext.visit(): WhileStatement {
-	return WhileStatement(
+fun KotlinParser.WhileStatementContext.visit(): ASTWhileStatement {
+	return ASTWhileStatement(
 		expression = expression().visit(),
 		controlStructureBody = controlStructureBody()?.visit()
 	)
 }
 
-fun KotlinParser.DoWhileStatementContext.visit(): DoWhileStatement {
-	return DoWhileStatement(
+fun KotlinParser.DoWhileStatementContext.visit(): ASTDoWhileStatement {
+	return ASTDoWhileStatement(
 		controlStructureBody = controlStructureBody()?.visit(),
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.AssignmentContext.visit(): Assignment {
-	return Assignment(
+fun KotlinParser.AssignmentContext.visit(): ASTAssignment {
+	return ASTAssignment(
 		directlyAssignableExpression = directlyAssignableExpression()?.visit(),
 		assignableExpression = assignableExpression()?.visit(),
 		assignmentAndOperator = assignmentAndOperator()?.visit(),
@@ -601,47 +610,47 @@ fun KotlinParser.AssignmentContext.visit(): Assignment {
 	)
 }
 
-fun KotlinParser.ExpressionContext.visit(): Expression {
-	return Expression(
+fun KotlinParser.ExpressionContext.visit(): ASTExpression {
+	return ASTExpression(
 		disjunction = disjunction().visit()
 	)
 }
 
-fun KotlinParser.DisjunctionContext.visit(): Disjunction {
-	return Disjunction(
+fun KotlinParser.DisjunctionContext.visit(): ASTDisjunction {
+	return ASTDisjunction(
 		conjunction = conjunction().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ConjunctionContext.visit(): Conjunction {
-	return Conjunction(
+fun KotlinParser.ConjunctionContext.visit(): ASTConjunction {
+	return ASTConjunction(
 		equality = equality().map { it.visit() }
 	)
 }
 
-fun KotlinParser.EqualityContext.visit(): Equality {
-	return Equality(
+fun KotlinParser.EqualityContext.visit(): ASTEquality {
+	return ASTEquality(
 		comparison = comparison().map { it.visit() },
 		equalityOperator = equalityOperator().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ComparisonContext.visit(): Comparison {
-	return Comparison(
+fun KotlinParser.ComparisonContext.visit(): ASTComparison {
+	return ASTComparison(
 		genericCallLikeComparison = genericCallLikeComparison().map { it.visit() },
 		comparisonOperator = comparisonOperator().map { it.visit() }
 	)
 }
 
-fun KotlinParser.GenericCallLikeComparisonContext.visit(): GenericCallLikeComparison {
-	return GenericCallLikeComparison(
+fun KotlinParser.GenericCallLikeComparisonContext.visit(): ASTGenericCallLikeComparison {
+	return ASTGenericCallLikeComparison(
 		infixOperation = infixOperation().visit(),
 		callSuffix = callSuffix().map { it.visit() }
 	)
 }
 
-fun KotlinParser.InfixOperationContext.visit(): InfixOperation {
-	return InfixOperation(
+fun KotlinParser.InfixOperationContext.visit(): ASTInfixOperation {
+	return ASTInfixOperation(
 		elvisExpression = elvisExpression(0)!!.visit(),
 		sub = buildList {
 			val list = children!!.drop(1).dropWhile {
@@ -653,14 +662,14 @@ fun KotlinParser.InfixOperationContext.visit(): InfixOperation {
 				add(
 					when {
 						operator is KotlinParser.InOperatorContext && right is KotlinParser.ElvisExpressionContext -> {
-							InfixOperation.In(
+							ASTInfixOperation.In(
 								operator = operator.visit(),
 								right = right.visit()
 							)
 						}
 
 						operator is KotlinParser.IsOperatorContext && right is KotlinParser.TypeContext -> {
-							InfixOperation.Is(
+							ASTInfixOperation.Is(
 								operator = operator.visit(),
 								right = right.visit()
 							)
@@ -674,21 +683,21 @@ fun KotlinParser.InfixOperationContext.visit(): InfixOperation {
 	)
 }
 
-fun KotlinParser.ElvisExpressionContext.visit(): ElvisExpression {
-	return ElvisExpression(
+fun KotlinParser.ElvisExpressionContext.visit(): ASTElvisExpression {
+	return ASTElvisExpression(
 		infixFunctionCall = infixFunctionCall().map { it.visit() }
 	)
 }
 
-fun KotlinParser.InfixFunctionCallContext.visit(): InfixFunctionCall {
-	return InfixFunctionCall(
+fun KotlinParser.InfixFunctionCallContext.visit(): ASTInfixFunctionCall {
+	return ASTInfixFunctionCall(
 		rangeExpression = rangeExpression().map { it.visit() },
 		simpleIdentifier = simpleIdentifier().map { it.visit() }
 	)
 }
 
-fun KotlinParser.RangeExpressionContext.visit(): RangeExpression {
-	return RangeExpression(
+fun KotlinParser.RangeExpressionContext.visit(): ASTRangeExpression {
+	return ASTRangeExpression(
 		additiveExpression = additiveExpression().map { it.visit() },
 		sub = buildList {
 			val list = children!!.drop(1).dropWhile {
@@ -698,8 +707,8 @@ fun KotlinParser.RangeExpressionContext.visit(): RangeExpression {
 				val operator = list[i * 2] as TerminalNode
 				add(
 					when (operator.symbol.type) {
-						KotlinLexer.Tokens.RANGE -> RangeExpression.Range
-						KotlinLexer.Tokens.RANGE_UNTIL -> RangeExpression.RangeUntil
+						KotlinLexer.Tokens.RANGE -> ASTRangeExpression.Range
+						KotlinLexer.Tokens.RANGE_UNTIL -> ASTRangeExpression.RangeUntil
 						else -> error(operator)
 					}
 				)
@@ -708,52 +717,52 @@ fun KotlinParser.RangeExpressionContext.visit(): RangeExpression {
 	)
 }
 
-fun KotlinParser.AdditiveExpressionContext.visit(): AdditiveExpression {
-	return AdditiveExpression(
+fun KotlinParser.AdditiveExpressionContext.visit(): ASTAdditiveExpression {
+	return ASTAdditiveExpression(
 		multiplicativeExpression = multiplicativeExpression().map { it.visit() },
 		additiveOperator = additiveOperator().map { it.visit() }
 	)
 }
 
-fun KotlinParser.MultiplicativeExpressionContext.visit(): MultiplicativeExpression {
-	return MultiplicativeExpression(
+fun KotlinParser.MultiplicativeExpressionContext.visit(): ASTMultiplicativeExpression {
+	return ASTMultiplicativeExpression(
 		asExpression = asExpression().map { it.visit() },
 		multiplicativeOperator = multiplicativeOperator().map { it.visit() }
 	)
 }
 
-fun KotlinParser.AsExpressionContext.visit(): AsExpression {
-	return AsExpression(
+fun KotlinParser.AsExpressionContext.visit(): ASTAsExpression {
+	return ASTAsExpression(
 		prefixUnaryExpression = prefixUnaryExpression().visit(),
 		asOperator = asOperator().map { it.visit() },
 		type = type().map { it.visit() }
 	)
 }
 
-fun KotlinParser.PrefixUnaryExpressionContext.visit(): PrefixUnaryExpression {
-	return PrefixUnaryExpression(
+fun KotlinParser.PrefixUnaryExpressionContext.visit(): ASTPrefixUnaryExpression {
+	return ASTPrefixUnaryExpression(
 		unaryPrefix = unaryPrefix().map { it.visit() },
 		postfixUnaryExpression = postfixUnaryExpression().visit()
 	)
 }
 
-fun KotlinParser.UnaryPrefixContext.visit(): UnaryPrefix {
-	return UnaryPrefix(
+fun KotlinParser.UnaryPrefixContext.visit(): ASTUnaryPrefix {
+	return ASTUnaryPrefix(
 		annotation = annotation()?.visit(),
 		label = label()?.visit(),
 		prefixUnaryOperator = prefixUnaryOperator()?.visit()
 	)
 }
 
-fun KotlinParser.PostfixUnaryExpressionContext.visit(): PostfixUnaryExpression {
-	return PostfixUnaryExpression(
+fun KotlinParser.PostfixUnaryExpressionContext.visit(): ASTPostfixUnaryExpression {
+	return ASTPostfixUnaryExpression(
 		primaryExpression = primaryExpression().visit(),
 		postfixUnarySuffix = postfixUnarySuffix().map { it.visit() }
 	)
 }
 
-fun KotlinParser.PostfixUnarySuffixContext.visit(): PostfixUnarySuffix {
-	return PostfixUnarySuffix(
+fun KotlinParser.PostfixUnarySuffixContext.visit(): ASTPostfixUnarySuffix {
+	return ASTPostfixUnarySuffix(
 		postfixUnaryOperator = postfixUnaryOperator()?.visit(),
 		typeArguments = typeArguments()?.visit(),
 		callSuffix = callSuffix()?.visit(),
@@ -762,8 +771,8 @@ fun KotlinParser.PostfixUnarySuffixContext.visit(): PostfixUnarySuffix {
 	)
 }
 
-fun KotlinParser.DirectlyAssignableExpressionContext.visit(): DirectlyAssignableExpression {
-	return DirectlyAssignableExpression(
+fun KotlinParser.DirectlyAssignableExpressionContext.visit(): ASTDirectlyAssignableExpression {
+	return ASTDirectlyAssignableExpression(
 		postfixUnaryExpression = postfixUnaryExpression()?.visit(),
 		assignableSuffix = assignableSuffix()?.visit(),
 		simpleIdentifier = simpleIdentifier()?.visit(),
@@ -771,41 +780,41 @@ fun KotlinParser.DirectlyAssignableExpressionContext.visit(): DirectlyAssignable
 	)
 }
 
-fun KotlinParser.ParenthesizedDirectlyAssignableExpressionContext.visit(): ParenthesizedDirectlyAssignableExpression {
-	return ParenthesizedDirectlyAssignableExpression(
+fun KotlinParser.ParenthesizedDirectlyAssignableExpressionContext.visit(): ASTParenthesizedDirectlyAssignableExpression {
+	return ASTParenthesizedDirectlyAssignableExpression(
 		directlyAssignableExpression = directlyAssignableExpression().visit()
 	)
 }
 
-fun KotlinParser.AssignableExpressionContext.visit(): AssignableExpression {
-	return AssignableExpression(
+fun KotlinParser.AssignableExpressionContext.visit(): ASTAssignableExpression {
+	return ASTAssignableExpression(
 		prefixUnaryExpression = prefixUnaryExpression()?.visit(),
 		parenthesizedAssignableExpression = parenthesizedAssignableExpression()?.visit()
 	)
 }
 
-fun KotlinParser.ParenthesizedAssignableExpressionContext.visit(): ParenthesizedAssignableExpression {
-	return ParenthesizedAssignableExpression(
+fun KotlinParser.ParenthesizedAssignableExpressionContext.visit(): ASTParenthesizedAssignableExpression {
+	return ASTParenthesizedAssignableExpression(
 		assignableExpression = assignableExpression().visit()
 	)
 }
 
-fun KotlinParser.AssignableSuffixContext.visit(): AssignableSuffix {
-	return AssignableSuffix(
+fun KotlinParser.AssignableSuffixContext.visit(): ASTAssignableSuffix {
+	return ASTAssignableSuffix(
 		typeArguments = typeArguments()?.visit(),
 		indexingSuffix = indexingSuffix()?.visit(),
 		navigationSuffix = navigationSuffix()?.visit()
 	)
 }
 
-fun KotlinParser.IndexingSuffixContext.visit(): IndexingSuffix {
-	return IndexingSuffix(
+fun KotlinParser.IndexingSuffixContext.visit(): ASTIndexingSuffix {
+	return ASTIndexingSuffix(
 		expression = expression().map { it.visit() }
 	)
 }
 
-fun KotlinParser.NavigationSuffixContext.visit(): NavigationSuffix {
-	return NavigationSuffix(
+fun KotlinParser.NavigationSuffixContext.visit(): ASTNavigationSuffix {
+	return ASTNavigationSuffix(
 		memberAccessOperator = memberAccessOperator().visit(),
 		simpleIdentifier = simpleIdentifier()?.visit(),
 		parenthesizedExpression = parenthesizedExpression()?.visit(),
@@ -813,36 +822,36 @@ fun KotlinParser.NavigationSuffixContext.visit(): NavigationSuffix {
 	)
 }
 
-fun KotlinParser.CallSuffixContext.visit(): CallSuffix {
-	return CallSuffix(
+fun KotlinParser.CallSuffixContext.visit(): ASTCallSuffix {
+	return ASTCallSuffix(
 		typeArguments = typeArguments()?.visit(),
 		valueArguments = valueArguments()?.visit(),
 		annotatedLambda = annotatedLambda()?.visit()
 	)
 }
 
-fun KotlinParser.AnnotatedLambdaContext.visit(): AnnotatedLambda {
-	return AnnotatedLambda(
+fun KotlinParser.AnnotatedLambdaContext.visit(): ASTAnnotatedLambda {
+	return ASTAnnotatedLambda(
 		annotation = annotation().map { it.visit() },
 		label = label()?.visit(),
 		lambdaLiteral = lambdaLiteral().visit()
 	)
 }
 
-fun KotlinParser.TypeArgumentsContext.visit(): TypeArguments {
-	return TypeArguments(
+fun KotlinParser.TypeArgumentsContext.visit(): ASTTypeArguments {
+	return ASTTypeArguments(
 		typeProjection = typeProjection().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ValueArgumentsContext.visit(): ValueArguments {
-	return ValueArguments(
+fun KotlinParser.ValueArgumentsContext.visit(): ASTValueArguments {
+	return ASTValueArguments(
 		valueArgument = valueArgument().map { it.visit() }
 	)
 }
 
-fun KotlinParser.ValueArgumentContext.visit(): ValueArgument {
-	return ValueArgument(
+fun KotlinParser.ValueArgumentContext.visit(): ASTValueArgument {
+	return ASTValueArgument(
 		annotation = annotation()?.visit(),
 		simpleIdentifier = simpleIdentifier()?.visit(),
 		multi = MULT() != null,
@@ -850,8 +859,8 @@ fun KotlinParser.ValueArgumentContext.visit(): ValueArgument {
 	)
 }
 
-fun KotlinParser.PrimaryExpressionContext.visit(): PrimaryExpression {
-	return PrimaryExpression(
+fun KotlinParser.PrimaryExpressionContext.visit(): ASTPrimaryExpression {
+	return ASTPrimaryExpression(
 		parenthesizedExpression = parenthesizedExpression()?.visit(),
 		simpleIdentifier = simpleIdentifier()?.visit(),
 		literalConstant = literalConstant()?.visit(),
@@ -869,49 +878,49 @@ fun KotlinParser.PrimaryExpressionContext.visit(): PrimaryExpression {
 	)
 }
 
-fun KotlinParser.ParenthesizedExpressionContext.visit(): ParenthesizedExpression {
-	return ParenthesizedExpression(
+fun KotlinParser.ParenthesizedExpressionContext.visit(): ASTParenthesizedExpression {
+	return ASTParenthesizedExpression(
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.CollectionLiteralContext.visit(): CollectionLiteral {
-	return CollectionLiteral(
+fun KotlinParser.CollectionLiteralContext.visit(): ASTCollectionLiteral {
+	return ASTCollectionLiteral(
 		expression = expression().map { it.visit() }
 	)
 }
 
-fun KotlinParser.LiteralConstantContext.visit(): LiteralConstant {
-	return LiteralConstant(
-		booleanLiteral = BooleanLiteral()?.let { BooleanLiteral(it.text.toBoolean()) },
-		integerLiteral = IntegerLiteral()?.let { IntegerLiteral(it.text) },
-		hexLiteral = HexLiteral()?.let { HexLiteral(it.text) },
-		binLiteral = BinLiteral()?.let { BinLiteral(it.text) },
-		characterLiteral = CharacterLiteral()?.let { CharacterLiteral(it.text) },
-		realLiteral = RealLiteral()?.let { RealLiteral(it.text) },
-		nullLiteral = NullLiteral()?.let { NullLiteral },
-		longLiteral = LongLiteral()?.let { LongLiteral(it.text) },
-		unsignedLiteral = UnsignedLiteral()?.let { UnsignedLiteral(it.text) }
+fun KotlinParser.LiteralConstantContext.visit(): ASTLiteralConstant {
+	return ASTLiteralConstant(
+		booleanLiteral = BooleanLiteral()?.let { ASTBooleanLiteral(it.text.toBoolean()) },
+		integerLiteral = IntegerLiteral()?.let { ASTIntegerLiteral(it.text) },
+		hexLiteral = HexLiteral()?.let { ASTHexLiteral(it.text) },
+		binLiteral = BinLiteral()?.let { ASTBinLiteral(it.text) },
+		characterLiteral = CharacterLiteral()?.let { ASTCharacterLiteral(it.text) },
+		realLiteral = RealLiteral()?.let { ASTRealLiteral(it.text) },
+		nullLiteral = NullLiteral()?.let { ASTNullLiteral },
+		longLiteral = LongLiteral()?.let { ASTLongLiteral(it.text) },
+		unsignedLiteral = UnsignedLiteral()?.let { ASTUnsignedLiteral(it.text) }
 	)
 }
 
-fun KotlinParser.StringLiteralContext.visit(): StringLiteral {
-	return StringLiteral(
+fun KotlinParser.StringLiteralContext.visit(): ASTStringLiteral {
+	return ASTStringLiteral(
 		lineStringLiteral = lineStringLiteral()?.visit(),
 		multiLineStringLiteral = multiLineStringLiteral()?.visit()
 	)
 }
 
-fun KotlinParser.LineStringLiteralContext.visit(): LineStringLiteral {
-	return LineStringLiteral(
+fun KotlinParser.LineStringLiteralContext.visit(): ASTLineStringLiteral {
+	return ASTLineStringLiteral(
 		sub = children!!.drop(1).dropLast(1).map {
 			when (it) {
-				is KotlinParser.LineStringContentContext -> LineStringLiteral.Sub(
+				is KotlinParser.LineStringContentContext -> ASTLineStringLiteral.Sub(
 					lineStringContent = it.visit(),
 					lineStringExpression = null
 				)
 
-				is KotlinParser.LineStringExpressionContext -> LineStringLiteral.Sub(
+				is KotlinParser.LineStringExpressionContext -> ASTLineStringLiteral.Sub(
 					lineStringContent = null,
 					lineStringExpression = it.visit()
 				)
@@ -922,8 +931,8 @@ fun KotlinParser.LineStringLiteralContext.visit(): LineStringLiteral {
 	)
 }
 
-fun KotlinParser.MultiLineStringLiteralContext.visit(): MultiLineStringLiteral {
-	return MultiLineStringLiteral(
+fun KotlinParser.MultiLineStringLiteralContext.visit(): ASTMultiLineStringLiteral {
+	return ASTMultiLineStringLiteral(
 		sub = buildList {
 			children!!.filter {
 				!(it is TerminalNode &&
@@ -931,7 +940,7 @@ fun KotlinParser.MultiLineStringLiteralContext.visit(): MultiLineStringLiteral {
 								it.symbol.type == KotlinLexer.Tokens.TRIPLE_QUOTE_CLOSE))
 			}.forEach {
 				add(
-					MultiLineStringLiteral.Sub(
+					ASTMultiLineStringLiteral.Sub(
 						multiLineStringContent = (it as? KotlinParser.MultiLineStringContentContext)?.visit(),
 						multiLineStringExpression = (it as? KotlinParser.MultiLineStringExpressionContext)?.visit(),
 						multiLineStringQuote = it is TerminalNode
@@ -942,56 +951,56 @@ fun KotlinParser.MultiLineStringLiteralContext.visit(): MultiLineStringLiteral {
 	)
 }
 
-fun KotlinParser.LineStringContentContext.visit(): LineStringContent {
-	return LineStringContent(
-		lineStrText = LineStrText()?.let { LineStrText(it.text) },
-		lineStrEscapedChar = LineStrEscapedChar()?.let { LineStrEscapedChar(it.text) },
-		lineStrRef = LineStrRef()?.let { LineStrRef(it.text) }
+fun KotlinParser.LineStringContentContext.visit(): ASTLineStringContent {
+	return ASTLineStringContent(
+		lineStrText = LineStrText()?.let { ASTLineStrText(it.text) },
+		lineStrEscapedChar = LineStrEscapedChar()?.let { ASTLineStrEscapedChar(it.text) },
+		lineStrRef = LineStrRef()?.let { ASTLineStrRef(it.text) }
 	)
 }
 
-fun KotlinParser.LineStringExpressionContext.visit(): LineStringExpression {
-	return LineStringExpression(
+fun KotlinParser.LineStringExpressionContext.visit(): ASTLineStringExpression {
+	return ASTLineStringExpression(
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.MultiLineStringContentContext.visit(): MultiLineStringContent {
-	return MultiLineStringContent(
-		multiLineStrText = MultiLineStrText()?.let { MultiLineStrText(it.text) },
-		multiLineStringQuote = MultiLineStringQuote()?.let { MultiLineStringQuote(it.text.length) },
-		multiLineStrRef = MultiLineStrRef()?.let { MultiLineStrRef(it.text) }
+fun KotlinParser.MultiLineStringContentContext.visit(): ASTMultiLineStringContent {
+	return ASTMultiLineStringContent(
+		multiLineStrText = MultiLineStrText()?.let { ASTMultiLineStrText(it.text) },
+		multiLineStringQuote = MultiLineStringQuote()?.let { ASTMultiLineStringQuote(it.text.length) },
+		multiLineStrRef = MultiLineStrRef()?.let { ASTMultiLineStrRef(it.text) }
 	)
 }
 
-fun KotlinParser.MultiLineStringExpressionContext.visit(): MultiLineStringExpression {
-	return MultiLineStringExpression(
+fun KotlinParser.MultiLineStringExpressionContext.visit(): ASTMultiLineStringExpression {
+	return ASTMultiLineStringExpression(
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.LambdaLiteralContext.visit(): LambdaLiteral {
-	return LambdaLiteral(
+fun KotlinParser.LambdaLiteralContext.visit(): ASTLambdaLiteral {
+	return ASTLambdaLiteral(
 		lambdaParameters = lambdaParameters()?.visit(),
 		statements = statements().visit()
 	)
 }
 
-fun KotlinParser.LambdaParametersContext.visit(): LambdaParameters {
-	return LambdaParameters(
+fun KotlinParser.LambdaParametersContext.visit(): ASTLambdaParameters {
+	return ASTLambdaParameters(
 		lambdaParameter = lambdaParameter().map { it.visit() }
 	)
 }
 
-fun KotlinParser.LambdaParameterContext.visit(): LambdaParameter {
-	return LambdaParameter(
+fun KotlinParser.LambdaParameterContext.visit(): ASTLambdaParameter {
+	return ASTLambdaParameter(
 		variableDeclaration = variableDeclaration()?.visit(),
 		multiVariableDeclaration = multiVariableDeclaration()?.visit(),
 		type = type()?.visit()
 	)
 }
 
-fun KotlinParser.AnonymousFunctionContext.visit(): AnonymousFunction {
+fun KotlinParser.AnonymousFunctionContext.visit(): ASTAnonymousFunction {
 	val list = children!!.filter { it !is TerminalNode }
 	val type = list[0].let {
 		when (it) {
@@ -1009,7 +1018,7 @@ fun KotlinParser.AnonymousFunctionContext.visit(): AnonymousFunction {
 			else -> null
 		}
 	}
-	return AnonymousFunction(
+	return ASTAnonymousFunction(
 		suspend = SUSPEND() != null,
 		type = type,
 		parametersWithOptionalType = parametersWithOptionalType().visit(),
@@ -1019,36 +1028,36 @@ fun KotlinParser.AnonymousFunctionContext.visit(): AnonymousFunction {
 	)
 }
 
-fun KotlinParser.FunctionLiteralContext.visit(): FunctionLiteral {
-	return FunctionLiteral(
+fun KotlinParser.FunctionLiteralContext.visit(): ASTFunctionLiteral {
+	return ASTFunctionLiteral(
 		lambdaLiteral = lambdaLiteral()?.visit(),
 		anonymousFunction = anonymousFunction()?.visit()
 	)
 }
 
-fun KotlinParser.ObjectLiteralContext.visit(): ObjectLiteral {
-	return ObjectLiteral(
+fun KotlinParser.ObjectLiteralContext.visit(): ASTObjectLiteral {
+	return ASTObjectLiteral(
 		data = DATA() != null,
 		delegationSpecifiers = delegationSpecifiers()?.visit(),
 		classBody = classBody()?.visit()
 	)
 }
 
-fun KotlinParser.ThisExpressionContext.visit(): ThisExpression {
-	return ThisExpression(
+fun KotlinParser.ThisExpressionContext.visit(): ASTThisExpression {
+	return ASTThisExpression(
 		at = THIS_AT()?.text?.drop("this@".length)
 	)
 }
 
-fun KotlinParser.SuperExpressionContext.visit(): SuperExpression {
-	return SuperExpression(
+fun KotlinParser.SuperExpressionContext.visit(): ASTSuperExpression {
+	return ASTSuperExpression(
 		type = type()?.visit(),
 		simpleIdentifier = simpleIdentifier()?.visit(),
 		at = SUPER_AT()?.text?.drop("super@".length)
 	)
 }
 
-fun KotlinParser.IfExpressionContext.visit(): IfExpression {
+fun KotlinParser.IfExpressionContext.visit(): ASTIfExpression {
 	val list = children!!.filter {
 		it is KotlinParser.ControlStructureBodyContext ||
 				(it is TerminalNode && it.symbol.type == KotlinLexer.Tokens.ELSE)
@@ -1063,68 +1072,68 @@ fun KotlinParser.IfExpressionContext.visit(): IfExpression {
 		list.any { it is TerminalNode } -> (list.last() as KotlinParser.ControlStructureBodyContext).visit()
 		else -> null
 	}
-	return IfExpression(
+	return ASTIfExpression(
 		expression = expression().visit(),
 		controlStructureBody = controlStructureBody,
 		elseControlStructureBody = elseControlStructureBody
 	)
 }
 
-fun KotlinParser.WhenSubjectContext.visit(): WhenSubject {
-	return WhenSubject(
+fun KotlinParser.WhenSubjectContext.visit(): ASTWhenSubject {
+	return ASTWhenSubject(
 		annotation = annotation().map { it.visit() },
 		variableDeclaration = variableDeclaration()?.visit(),
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.WhenExpressionContext.visit(): WhenExpression {
-	return WhenExpression(
+fun KotlinParser.WhenExpressionContext.visit(): ASTWhenExpression {
+	return ASTWhenExpression(
 		whenSubject = whenSubject()?.visit(),
 		whenEntry = whenEntry().map { it.visit() }
 	)
 }
 
-fun KotlinParser.WhenEntryContext.visit(): WhenEntry {
-	return WhenEntry(
+fun KotlinParser.WhenEntryContext.visit(): ASTWhenEntry {
+	return ASTWhenEntry(
 		whenCondition = whenCondition().map { it.visit() },
 		`else` = ELSE() != null,
 		controlStructureBody = controlStructureBody().visit()
 	)
 }
 
-fun KotlinParser.WhenConditionContext.visit(): WhenCondition {
-	return WhenCondition(
+fun KotlinParser.WhenConditionContext.visit(): ASTWhenCondition {
+	return ASTWhenCondition(
 		expression = expression()?.visit(),
 		rangeTest = rangeTest()?.visit(),
 		typeTest = typeTest()?.visit()
 	)
 }
 
-fun KotlinParser.RangeTestContext.visit(): RangeTest {
-	return RangeTest(
+fun KotlinParser.RangeTestContext.visit(): ASTRangeTest {
+	return ASTRangeTest(
 		inOperator = inOperator().visit(),
 		expression = expression().visit()
 	)
 }
 
-fun KotlinParser.TypeTestContext.visit(): TypeTest {
-	return TypeTest(
+fun KotlinParser.TypeTestContext.visit(): ASTTypeTest {
+	return ASTTypeTest(
 		isOperator = isOperator().visit(),
 		type = type().visit()
 	)
 }
 
-fun KotlinParser.TryExpressionContext.visit(): TryExpression {
-	return TryExpression(
+fun KotlinParser.TryExpressionContext.visit(): ASTTryExpression {
+	return ASTTryExpression(
 		block = block().visit(),
 		catchBlock = catchBlock().map { it.visit() },
 		finallyBlock = finallyBlock()?.visit()
 	)
 }
 
-fun KotlinParser.CatchBlockContext.visit(): CatchBlock {
-	return CatchBlock(
+fun KotlinParser.CatchBlockContext.visit(): ASTCatchBlock {
+	return ASTCatchBlock(
 		annotation = annotation().map { it.visit() },
 		simpleIdentifier = simpleIdentifier().visit(),
 		type = type().visit(),
@@ -1132,14 +1141,14 @@ fun KotlinParser.CatchBlockContext.visit(): CatchBlock {
 	)
 }
 
-fun KotlinParser.FinallyBlockContext.visit(): FinallyBlock {
-	return FinallyBlock(
+fun KotlinParser.FinallyBlockContext.visit(): ASTFinallyBlock {
+	return ASTFinallyBlock(
 		block = block().visit()
 	)
 }
 
-fun KotlinParser.JumpExpressionContext.visit(): JumpExpression {
-	return JumpExpression(
+fun KotlinParser.JumpExpressionContext.visit(): ASTJumpExpression {
+	return ASTJumpExpression(
 		`throw` = THROW() != null,
 		`return` = RETURN() != null || RETURN_AT() != null,
 		`continue` = CONTINUE() != null || CONTINUE_AT() != null,
@@ -1156,15 +1165,15 @@ fun KotlinParser.JumpExpressionContext.visit(): JumpExpression {
 	)
 }
 
-fun KotlinParser.CallableReferenceContext.visit(): CallableReference {
-	return CallableReference(
+fun KotlinParser.CallableReferenceContext.visit(): ASTCallableReference {
+	return ASTCallableReference(
 		receiverType = receiverType()?.visit(),
 		simpleIdentifier = simpleIdentifier()?.visit()
 	)
 }
 
-fun KotlinParser.AssignmentAndOperatorContext.visit(): AssignmentAndOperator {
-	return AssignmentAndOperator(
+fun KotlinParser.AssignmentAndOperatorContext.visit(): ASTAssignmentAndOperator {
+	return ASTAssignmentAndOperator(
 		add = ADD_ASSIGNMENT() != null,
 		sub = SUB_ASSIGNMENT() != null,
 		mul = MULT_ASSIGNMENT() != null,
@@ -1173,54 +1182,54 @@ fun KotlinParser.AssignmentAndOperatorContext.visit(): AssignmentAndOperator {
 	)
 }
 
-fun KotlinParser.EqualityOperatorContext.visit(): EqualityOperator {
-	return EqualityOperator(
+fun KotlinParser.EqualityOperatorContext.visit(): ASTEqualityOperator {
+	return ASTEqualityOperator(
 		hardEq = EXCL_EQEQ() != null || EQEQEQ() != null,
 		excl = EXCL_EQ() != null || EXCL_EQEQ() != null
 	)
 }
 
-fun KotlinParser.ComparisonOperatorContext.visit(): ComparisonOperator {
-	return ComparisonOperator(
+fun KotlinParser.ComparisonOperatorContext.visit(): ASTComparisonOperator {
+	return ASTComparisonOperator(
 		eq = LE() != null || GE() != null,
 		greater = RANGLE() != null || GE() != null
 	)
 }
 
-fun KotlinParser.InOperatorContext.visit(): InOperator {
-	return InOperator(
+fun KotlinParser.InOperatorContext.visit(): ASTInOperator {
+	return ASTInOperator(
 		not = NOT_IN() != null
 	)
 }
 
-fun KotlinParser.IsOperatorContext.visit(): IsOperator {
-	return IsOperator(
+fun KotlinParser.IsOperatorContext.visit(): ASTIsOperator {
+	return ASTIsOperator(
 		not = NOT_IS() != null
 	)
 }
 
-fun KotlinParser.AdditiveOperatorContext.visit(): AdditiveOperator {
-	return AdditiveOperator(
+fun KotlinParser.AdditiveOperatorContext.visit(): ASTAdditiveOperator {
+	return ASTAdditiveOperator(
 		add = ADD() != null
 	)
 }
 
-fun KotlinParser.MultiplicativeOperatorContext.visit(): MultiplicativeOperator {
-	return MultiplicativeOperator(
+fun KotlinParser.MultiplicativeOperatorContext.visit(): ASTMultiplicativeOperator {
+	return ASTMultiplicativeOperator(
 		mul = MULT() != null,
 		div = DIV() != null,
 		mod = MOD() != null
 	)
 }
 
-fun KotlinParser.AsOperatorContext.visit(): AsOperator {
-	return AsOperator(
+fun KotlinParser.AsOperatorContext.visit(): ASTAsOperator {
+	return ASTAsOperator(
 		safe = AS_SAFE() != null
 	)
 }
 
-fun KotlinParser.PrefixUnaryOperatorContext.visit(): PrefixUnaryOperator {
-	return PrefixUnaryOperator(
+fun KotlinParser.PrefixUnaryOperatorContext.visit(): ASTPrefixUnaryOperator {
+	return ASTPrefixUnaryOperator(
 		increment = INCR() != null,
 		decrement = DECR() != null,
 		sub = SUB() != null,
@@ -1229,25 +1238,25 @@ fun KotlinParser.PrefixUnaryOperatorContext.visit(): PrefixUnaryOperator {
 	)
 }
 
-fun KotlinParser.PostfixUnaryOperatorContext.visit(): PostfixUnaryOperator {
-	return PostfixUnaryOperator(
+fun KotlinParser.PostfixUnaryOperatorContext.visit(): ASTPostfixUnaryOperator {
+	return ASTPostfixUnaryOperator(
 		increment = INCR() != null,
 		decrement = DECR() != null,
 		excl = excl() != null
 	)
 }
 
-fun KotlinParser.MemberAccessOperatorContext.visit(): MemberAccessOperator {
-	return MemberAccessOperator(
+fun KotlinParser.MemberAccessOperatorContext.visit(): ASTMemberAccessOperator {
+	return ASTMemberAccessOperator(
 		safe = safeNav() != null,
 		reference = COLONCOLON() != null
 	)
 }
 
-fun KotlinParser.ModifiersContext.visit(): Modifiers {
-	return Modifiers(
+fun KotlinParser.ModifiersContext.visit(): ASTModifiers {
+	return ASTModifiers(
 		sub = children!!.map {
-			Modifiers.Sub(
+			ASTModifiers.Sub(
 				annotation = (it as? KotlinParser.AnnotationContext)?.visit(),
 				modifier = (it as? KotlinParser.ModifierContext)?.visit()
 			)
@@ -1255,10 +1264,10 @@ fun KotlinParser.ModifiersContext.visit(): Modifiers {
 	)
 }
 
-fun KotlinParser.ParameterModifiersContext.visit(): ParameterModifiers {
-	return ParameterModifiers(
+fun KotlinParser.ParameterModifiersContext.visit(): ASTParameterModifiers {
+	return ASTParameterModifiers(
 		sub = children!!.map {
-			ParameterModifiers.Sub(
+			ASTParameterModifiers.Sub(
 				annotation = (it as? KotlinParser.AnnotationContext)?.visit(),
 				parameterModifier = (it as? KotlinParser.ParameterModifierContext)?.visit()
 			)
@@ -1266,8 +1275,8 @@ fun KotlinParser.ParameterModifiersContext.visit(): ParameterModifiers {
 	)
 }
 
-fun KotlinParser.ModifierContext.visit(): Modifier {
-	return Modifier(
+fun KotlinParser.ModifierContext.visit(): ASTModifier {
+	return ASTModifier(
 		classModifier = classModifier()?.visit(),
 		memberModifier = memberModifier()?.visit(),
 		visibilityModifier = visibilityModifier()?.visit(),
@@ -1279,21 +1288,21 @@ fun KotlinParser.ModifierContext.visit(): Modifier {
 	)
 }
 
-fun KotlinParser.TypeModifiersContext.visit(): TypeModifiers {
-	return TypeModifiers(
+fun KotlinParser.TypeModifiersContext.visit(): ASTTypeModifiers {
+	return ASTTypeModifiers(
 		typeModifier = typeModifier().map { it.visit() }
 	)
 }
 
-fun KotlinParser.TypeModifierContext.visit(): TypeModifier {
-	return TypeModifier(
+fun KotlinParser.TypeModifierContext.visit(): ASTTypeModifier {
+	return ASTTypeModifier(
 		annotation = annotation()?.visit(),
 		suspend = SUSPEND() != null
 	)
 }
 
-fun KotlinParser.ClassModifierContext.visit(): ClassModifier {
-	return ClassModifier(
+fun KotlinParser.ClassModifierContext.visit(): ASTClassModifier {
+	return ASTClassModifier(
 		enum = ENUM() != null,
 		sealed = SEALED() != null,
 		annotation = ANNOTATION() != null,
@@ -1303,15 +1312,15 @@ fun KotlinParser.ClassModifierContext.visit(): ClassModifier {
 	)
 }
 
-fun KotlinParser.MemberModifierContext.visit(): MemberModifier {
-	return MemberModifier(
+fun KotlinParser.MemberModifierContext.visit(): ASTMemberModifier {
+	return ASTMemberModifier(
 		override = OVERRIDE() != null,
 		lateInit = LATEINIT() != null
 	)
 }
 
-fun KotlinParser.VisibilityModifierContext.visit(): VisibilityModifier {
-	return VisibilityModifier(
+fun KotlinParser.VisibilityModifierContext.visit(): ASTVisibilityModifier {
+	return ASTVisibilityModifier(
 		public = PUBLIC() != null,
 		private = PRIVATE() != null,
 		internal = INTERNAL() != null,
@@ -1319,28 +1328,28 @@ fun KotlinParser.VisibilityModifierContext.visit(): VisibilityModifier {
 	)
 }
 
-fun KotlinParser.VarianceModifierContext.visit(): VarianceModifier {
-	return VarianceModifier(
+fun KotlinParser.VarianceModifierContext.visit(): ASTVarianceModifier {
+	return ASTVarianceModifier(
 		out = OUT() != null
 	)
 }
 
-fun KotlinParser.TypeParameterModifiersContext.visit(): TypeParameterModifiers {
-	return TypeParameterModifiers(
+fun KotlinParser.TypeParameterModifiersContext.visit(): ASTTypeParameterModifiers {
+	return ASTTypeParameterModifiers(
 		typeParameterModifier = typeParameterModifier().map { it.visit() }
 	)
 }
 
-fun KotlinParser.TypeParameterModifierContext.visit(): TypeParameterModifier {
-	return TypeParameterModifier(
+fun KotlinParser.TypeParameterModifierContext.visit(): ASTTypeParameterModifier {
+	return ASTTypeParameterModifier(
 		reificationModifier = reificationModifier()?.visit(),
 		varianceModifier = varianceModifier()?.visit(),
 		annotation = annotation()?.visit()
 	)
 }
 
-fun KotlinParser.FunctionModifierContext.visit(): FunctionModifier {
-	return FunctionModifier(
+fun KotlinParser.FunctionModifierContext.visit(): ASTFunctionModifier {
+	return ASTFunctionModifier(
 		tailrec = TAILREC() != null,
 		operator = OPERATOR() != null,
 		infix = INFIX() != null,
@@ -1350,59 +1359,59 @@ fun KotlinParser.FunctionModifierContext.visit(): FunctionModifier {
 	)
 }
 
-fun KotlinParser.PropertyModifierContext.visit(): PropertyModifier {
-	return PropertyModifier
+fun KotlinParser.PropertyModifierContext.visit(): ASTPropertyModifier {
+	return ASTPropertyModifier
 }
 
-fun KotlinParser.InheritanceModifierContext.visit(): InheritanceModifier {
-	return InheritanceModifier(
+fun KotlinParser.InheritanceModifierContext.visit(): ASTInheritanceModifier {
+	return ASTInheritanceModifier(
 		abstract = ABSTRACT() != null,
 		final = FINAL() != null,
 		open = OPEN() != null
 	)
 }
 
-fun KotlinParser.ParameterModifierContext.visit(): ParameterModifier {
-	return ParameterModifier(
+fun KotlinParser.ParameterModifierContext.visit(): ASTParameterModifier {
+	return ASTParameterModifier(
 		vararg = VARARG() != null,
 		noInline = NOINLINE() != null,
 		crossInline = CROSSINLINE() != null
 	)
 }
 
-fun KotlinParser.ReificationModifierContext.visit(): ReificationModifier {
-	return ReificationModifier
+fun KotlinParser.ReificationModifierContext.visit(): ASTReificationModifier {
+	return ASTReificationModifier
 }
 
-fun KotlinParser.PlatformModifierContext.visit(): PlatformModifier {
-	return PlatformModifier(
+fun KotlinParser.PlatformModifierContext.visit(): ASTPlatformModifier {
+	return ASTPlatformModifier(
 		actual = ACTUAL() != null
 	)
 }
 
-fun KotlinParser.AnnotationContext.visit(): tree.grammar.Annotation {
-	return tree.grammar.Annotation(
+fun KotlinParser.AnnotationContext.visit(): ASTAnnotation {
+	return ASTAnnotation(
 		singleAnnotation = singleAnnotation()?.visit(),
 		multiAnnotation = multiAnnotation()?.visit()
 	)
 }
 
-fun KotlinParser.SingleAnnotationContext.visit(): SingleAnnotation {
-	return SingleAnnotation(
+fun KotlinParser.SingleAnnotationContext.visit(): ASTSingleAnnotation {
+	return ASTSingleAnnotation(
 		annotationUseSiteTarget = annotationUseSiteTarget()?.visit(),
 		unescapedAnnotation = unescapedAnnotation().visit()
 	)
 }
 
-fun KotlinParser.MultiAnnotationContext.visit(): MultiAnnotation {
-	return MultiAnnotation(
+fun KotlinParser.MultiAnnotationContext.visit(): ASTMultiAnnotation {
+	return ASTMultiAnnotation(
 		annotationUseSiteTarget = annotationUseSiteTarget()?.visit(),
 		unescapedAnnotation = unescapedAnnotation().map { it.visit() }
 	)
 }
 
-fun KotlinParser.AnnotationUseSiteTargetContext.visit(): AnnotationUseSiteTarget {
-	return AnnotationUseSiteTarget(
+fun KotlinParser.AnnotationUseSiteTargetContext.visit(): ASTAnnotationUseSiteTarget {
+	return ASTAnnotationUseSiteTarget(
 		field = FIELD() != null,
 		property = PROPERTY() != null,
 		get = GET() != null,
@@ -1414,21 +1423,21 @@ fun KotlinParser.AnnotationUseSiteTargetContext.visit(): AnnotationUseSiteTarget
 	)
 }
 
-fun KotlinParser.UnescapedAnnotationContext.visit(): UnescapedAnnotation {
-	return UnescapedAnnotation(
+fun KotlinParser.UnescapedAnnotationContext.visit(): ASTUnescapedAnnotation {
+	return ASTUnescapedAnnotation(
 		constructorInvocation = constructorInvocation()?.visit(),
 		userType = userType()?.visit()
 	)
 }
 
-fun KotlinParser.SimpleIdentifierContext.visit(): SimpleIdentifier {
-	return SimpleIdentifier(
+fun KotlinParser.SimpleIdentifierContext.visit(): ASTSimpleIdentifier {
+	return ASTSimpleIdentifier(
 		value = text
 	)
 }
 
-fun KotlinParser.IdentifierContext.visit(): Identifier {
-	return Identifier(
+fun KotlinParser.IdentifierContext.visit(): ASTIdentifier {
+	return ASTIdentifier(
 		simpleIdentifier = simpleIdentifier().map { it.visit() }
 	)
 }

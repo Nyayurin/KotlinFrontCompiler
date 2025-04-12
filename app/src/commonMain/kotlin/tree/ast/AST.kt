@@ -1,27 +1,27 @@
-package tree.grammar
+package tree.ast
 
-sealed class Tree {
+sealed class AST {
 	final override fun toString() = toString(0)
 	abstract fun toString(depth: Int): String
 }
 
-class TreeString(private val value: String) : Tree() {
+class ASTString(private val value: String) : AST() {
 	override fun toString(depth: Int) = value
 }
 
-class TreeCharacter(private val value: Char) : Tree() {
+class ASTCharacter(private val value: Char) : AST() {
 	override fun toString(depth: Int) = value.toString()
 }
 
-class TreeNumber(private val value: Number) : Tree() {
+class ASTNumber(private val value: Number) : AST() {
 	override fun toString(depth: Int) = value.toString()
 }
 
-class TreeBoolean(private val value: Boolean) : Tree() {
+class ASTBoolean(private val value: Boolean) : AST() {
 	override fun toString(depth: Int) = value.toString()
 }
 
-class TreeList<T : TreeNode>(private val list: List<T>) : Tree(), List<T> by list {
+class ASTList<T : ASTNode>(private val list: List<T>) : AST(), List<T> by list {
 	override fun toString(depth: Int) = buildString {
 		append('[')
 		if (list.isNotEmpty()) {
@@ -41,15 +41,15 @@ class TreeList<T : TreeNode>(private val list: List<T>) : Tree(), List<T> by lis
 	}
 }
 
-sealed class TreeNode(
+sealed class ASTNode(
 	protected val name: String,
-	protected vararg val properties: Pair<String, Tree?>
-) : Tree() {
+	protected vararg val properties: Pair<String, AST?>
+) : AST() {
 	final override fun toString(depth: Int) = buildString {
 		append(name)
 		append('(')
 		val list = properties.filter { (_, value) ->
-			value != null && !(value is TreeList<*> && value.isEmpty())
+			value != null && !(value is ASTList<*> && value.isEmpty())
 		}.map { it.first to it.second!! }
 		if (list.isNotEmpty()) {
 			append(list.joinToString(",\n", "\n", "\n") { (key, value) ->
